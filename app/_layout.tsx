@@ -9,6 +9,7 @@ import { StudyProvider } from "@/lib/study-store";
 import { createTRPCClient, trpc } from "@/lib/trpc";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { SubscriptionProvider } from "@/lib/subscription-store";
+import { CommunityProvider } from "@/lib/community-store";
 
 // Keep the splash screen visible while we bootstrap the app
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -67,6 +68,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <SubscriptionProvider>
+            <CommunityProvider>
             <StudyProvider>
               <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
                 <Stack.Screen name="index" />
@@ -76,9 +78,11 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="lesson" options={{ animation: "slide_from_right" }} />
                 <Stack.Screen name="materials" options={{ animation: "slide_from_right" }} />
+                <Stack.Screen name="community-chat" options={{ animation: "slide_from_right" }} />
                 <Stack.Screen name="paywall" options={{ animation: "slide_from_bottom", presentation: "modal" }} />
               </Stack>
             </StudyProvider>
+            </CommunityProvider>
             </SubscriptionProvider>
           </ThemeProvider>
         </QueryClientProvider>

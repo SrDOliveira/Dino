@@ -73,8 +73,8 @@ export default function ArenaScreen() {
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <View style={styles.shell}>
         <View style={styles.hero}>
-          <View style={styles.brandRow}><View style={styles.brand}><DuoduoMascot size={49} /><View><Text style={styles.brandName}>DINO</Text><Text style={styles.brandSub}>Aprovação Tática</Text></View></View><View style={styles.profileMini}><View style={styles.avatar}><MaterialIcons name="person" size={25} color="#375248" /></View><View><Text style={styles.greeting}>OLÁ, {firstName.toUpperCase()}!</Text><Text style={styles.training}>EM TREINAMENTO</Text></View></View></View>
-          <View style={styles.heroMain}><View style={styles.contestCopy}><Text style={styles.label}>CONCURSO:</Text><Text style={styles.contest}>{contest.title}</Text><Text style={styles.labelDate}>CRONOGRAMA:</Text><Text style={styles.dateValue}>{contest.dateLabel}</Text><Text style={styles.countdown}>{countdown}</Text><Text style={styles.edictMeta}>{edict.completed}/{edict.total} temas estudados</Text></View><EdictRing progress={progress} /></View>
+          <View style={styles.brandRow}><View style={styles.brand}><DuoduoMascot size={49} /><View><Text style={styles.brandName}>DINO</Text><Text style={styles.brandSub}>Carreira militar & segurança</Text></View></View><View style={styles.profileMini}><View style={styles.avatar}><MaterialIcons name="person" size={25} color="#375248" /></View><View><Text style={styles.greeting}>OLÁ, {firstName.toUpperCase()}!</Text><Text style={styles.training}>EM PREPARAÇÃO</Text></View></View></View>
+          <View style={styles.heroMain}><View style={styles.contestCopy}><Text style={styles.label}>OBJETIVO:</Text><Text style={styles.contest}>{contest.title}</Text><Text style={styles.labelDate}>CRONOGRAMA:</Text><Text style={styles.dateValue}>{contest.dateLabel}</Text><Text style={styles.countdown}>{countdown}</Text><Text style={styles.edictMeta}>{edict.completed}/{edict.total} temas estudados</Text></View><EdictRing progress={progress} /></View>
         </View>
 
         <View style={styles.missionPanel}>

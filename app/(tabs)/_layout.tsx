@@ -53,8 +53,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="league"
         options={{
-          title: "Liga",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="trophy.fill" color={color} />,
+          title: "Comunidade",
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="message.fill" color={color} />,
         }}
       />
       <Tabs.Screen

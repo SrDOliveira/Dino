@@ -1,0 +1,2 @@
+import type { StudyState } from "@/lib/study-store";
+export function serializeStudySnapshot(state: StudyState) { return JSON.stringify({ name: state.name, contestId: state.contestId, selectedSubjectIds: state.selectedSubjectIds, answers: state.answers, completedLessonIds: state.completedLessonIds, xp: state.xp, tacticalPoints: state.tacticalPoints, streak: state.streak, weeklyPriorityLessonIds: state.weeklyPriorityLessonIds, topicMastery: state.topicMastery, simulations: state.simulations, contestSyllabus: state.contestSyllabus, examDate: state.examDate }); }

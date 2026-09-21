@@ -1,0 +1,28 @@
+import { useState } from "react";
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { router } from "expo-router";
+import { PrimaryButton } from "@/components/primary-button";
+import { ScreenContainer } from "@/components/screen-container";
+import { StudyNavBar } from "@/components/study-nav-bar";
+import { examCountdownLabel, formatStudyTime, parseStudyTime, WEEKDAY_OPTIONS } from "@/lib/study-schedule";
+import { syncStudyReminders } from "@/lib/study-reminders";
+import { useStudy } from "@/lib/study-store";
+
+export default function StudyScheduleScreen() {
+  const { state, setStudySchedule, setExamDate } = useStudy();
+  const [weekdays, setWeekdays] = useState(state.studySchedule.weekdays);
+  const [time, setTime] = useState(formatStudyTime(state.studySchedule));
+  const [examDate, setLocalExamDate] = useState(state.examDate ?? "");
+  const [saving, setSaving] = useState(false);
+  const toggle = (day: number) => setWeekdays((current) => current.includes(day) ? current.filter((item) => item !== day) : [...current, day].sort((a, b) => a - b));
+  const save = async () => {
+    const parsed = parseStudyTime(time);
+    if (!parsed || !weekdays.length) { Alert.alert("Revise o plano", "Escolha ao menos um dia e informe o horário no formato HH:MM."); return; }
+    if (examDate && !/^\d{4}-\d{2}-\d{2}$/.test(examDate)) { Alert.alert("Data inválida", "Use o formato AAAA-MM-DD."); return; }
+    setSaving(true);
+    try { const proposed = { ...state.studySchedule, weekdays, ...parsed, remindersEnabled: true }; const result = await syncStudyReminders(proposed, examCountdownLabel(examDate || undefined)); setStudySchedule({ ...proposed, remindersEnabled: result.available, notificationIds: result.notificationIds }); setExamDate(examDate || undefined); Alert.alert("Plano salvo", result.available ? "Os lembretes foram programados neste dispositivo." : Platform.OS === "web" ? "O plano foi salvo. Teste os lembretes no aplicativo instalado." : "Ative as notificações do Dino nas configurações do dispositivo."); } finally { setSaving(false); }
+  };
+  return <ScreenContainer edges={["top", "bottom", "left", "right"]} className="px-5"><View style={styles.header}><Pressable onPress={() => router.back()}><MaterialIcons name="arrow-back" size={25} color="#31513A" /></Pressable><Text style={styles.headerTitle}>Plano de estudo</Text><View style={styles.spacer} /></View><ScrollView contentContainerStyle={styles.content}><View style={styles.hero}><MaterialIcons name="event-available" size={26} color="#1F7A32" /><View style={styles.heroCopy}><Text style={styles.heroTitle}>Agende sua missão</Text><Text style={styles.heroText}>O Dino lembra você de completar a missão diária.</Text></View></View><Text style={styles.label}>Dias de estudo</Text><View style={styles.days}>{WEEKDAY_OPTIONS.map((day) => <Pressable key={day.value} onPress={() => toggle(day.value)} style={[styles.day, weekdays.includes(day.value) && styles.daySelected]}><Text style={[styles.dayText, weekdays.includes(day.value) && styles.dayTextSelected]}>{day.label}</Text></Pressable>)}</View><Text style={styles.label}>Horário</Text><TextInput value={time} onChangeText={setTime} style={styles.input} placeholder="19:00" maxLength={5} keyboardType="numbers-and-punctuation" /><Text style={styles.label}>Data da prova</Text><TextInput value={examDate} onChangeText={setLocalExamDate} style={styles.input} placeholder="AAAA-MM-DD" maxLength={10} keyboardType="numbers-and-punctuation" /><View style={styles.countdown}><MaterialIcons name="flag" size={19} color="#A86900" /><Text style={styles.countdownText}>{examCountdownLabel(examDate || undefined)}</Text></View><Text style={styles.note}>No simulador, o plano é salvo. Os lembretes locais devem ser conferidos no aplicativo instalado.</Text></ScrollView><View style={styles.dock}><PrimaryButton label={saving ? "Salvando…" : "Salvar plano"} onPress={save} disabled={saving} /><StudyNavBar /></View></ScreenContainer>;
+}
+const styles = StyleSheet.create({ header: { height: 52, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, headerTitle: { color: "#102A43", fontSize: 17, fontWeight: "900" }, spacer: { width: 25 }, content: { paddingTop: 16, paddingBottom: 20 }, hero: { flexDirection: "row", gap: 11, padding: 15, backgroundColor: "#EAF7E6", borderRadius: 18 }, heroCopy: { flex: 1 }, heroTitle: { color: "#1E5630", fontSize: 16, fontWeight: "900" }, heroText: { color: "#55715D", fontSize: 12, marginTop: 3 }, label: { color: "#193D25", fontSize: 15, fontWeight: "900", marginTop: 22, marginBottom: 9 }, days: { flexDirection: "row", justifyContent: "space-between", gap: 6 }, day: { width: 40, height: 40, borderRadius: 11, justifyContent: "center", alignItems: "center", backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DCE8DE" }, daySelected: { backgroundColor: "#2E9745", borderColor: "#2E9745" }, dayText: { color: "#617568", fontSize: 11, fontWeight: "900" }, dayTextSelected: { color: "#FFFFFF" }, input: { color: "#243B53", backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#D8E5DA", borderRadius: 14, padding: 13, fontSize: 16, fontWeight: "800" }, countdown: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, marginTop: 10, backgroundColor: "#FFF5D8", borderRadius: 13 }, countdownText: { color: "#7A580C", fontSize: 13, fontWeight: "900" }, note: { color: "#617568", fontSize: 11, lineHeight: 16, marginTop: 18 }, dock: { gap: 8, paddingTop: 10, backgroundColor: "#FFFFFF" } });

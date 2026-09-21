@@ -1,63 +1,397 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import { createAudioPlayer, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder, useAudioRecorderState, RecordingPresets } from "expo-audio";
-import { File } from "expo-file-system";
+import * as DocumentPicker from "expo-document-picker";
 
+import { DuoduoMascot } from "@/components/duoduo-mascot";
+import { PrimaryButton } from "@/components/primary-button";
 import { ScreenContainer } from "@/components/screen-container";
-import { getLocalPoliceContest } from "@/lib/contest-catalog";
-import { getApiBaseUrl, startOAuthLogin } from "@/constants/oauth";
-import { useAuth } from "@/hooks/use-auth";
+import { useCommunity } from "@/lib/community-store";
 import { useStudy } from "@/lib/study-store";
-import { trpc } from "@/lib/trpc";
+import { isAllowedCommunityImage } from "@/lib/league-safety";
+import { haptic } from "@/lib/haptics";
+import type { CommunityPost, DirectThread } from "@/lib/community-types";
 
-const DEMO_RANKING = [{ name: "Ana R.", score: 1280 }, { name: "Rafael M.", score: 1140 }, { name: "Você", score: 0 }];
+type Tab = "feed" | "chats";
 
-export default function LeagueScreen() {
-  const { state } = useStudy();
-  const { isAuthenticated, loading } = useAuth();
-  const contest = getLocalPoliceContest(state.contestId);
-  const [text, setText] = useState("");
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderState = useAudioRecorderState(recorder);
-  const messages = trpc.league.list.useQuery(undefined, { enabled: isAuthenticated, refetchInterval: 8000 });
-  const sendText = trpc.league.sendText.useMutation({ onSuccess: () => { setText(""); messages.refetch(); } });
-  const sendAudio = trpc.league.sendAudio.useMutation({ onSuccess: () => messages.refetch() });
-  const blockUser = trpc.league.block.useMutation({ onSuccess: () => messages.refetch() });
-  const reportMessage = trpc.league.report.useMutation();
-  const lastSimulation = state.simulations[0];
-  const ownScore = state.xp + state.tacticalPoints;
-
-  useEffect(() => { setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true }).catch(() => undefined); }, []);
-  const signIn = () => startOAuthLogin();
-  const submitText = async () => { if (!text.trim()) return; try { await sendText.mutateAsync({ body: text }); } catch (error) { Alert.alert("Mensagem não enviada", error instanceof Error ? error.message : "Tente novamente."); } };
-  const toggleRecording = async () => {
-    try {
-      if (recorderState.isRecording) { await recorder.stop(); const uri = recorder.uri; if (!uri) return; const base64 = await new File(uri).base64(); await sendAudio.mutateAsync({ base64, mimeType: "audio/m4a" }); return; }
-      const permission = await requestRecordingPermissionsAsync();
-      if (!permission.granted) { Alert.alert("Microfone necessário", "Autorize o microfone para enviar uma mensagem de voz."); return; }
-      await recorder.prepareToRecordAsync(); recorder.record();
-    } catch { Alert.alert("Áudio não enviado", "Tente gravar uma mensagem mais curta."); }
-  };
-  const playAudio = (url?: string) => { if (!url) return; const player = createAudioPlayer(`${getApiBaseUrl()}${url}`); player.play(); setTimeout(() => player.remove(), 30_000); };
-  const report = (messageId: number) => Alert.alert("Denunciar mensagem", "A equipe receberá um aviso para revisar o conteúdo.", [
-    { text: "Cancelar", style: "cancel" },
-    { text: "Ofensa", onPress: () => reportMessage.mutate({ messageId, reason: "offense" }) },
-    { text: "Spam ou risco", onPress: () => reportMessage.mutate({ messageId, reason: "unsafe" }) },
-  ]);
-  const block = (userId: number, name: string) => Alert.alert(`Bloquear ${name}?`, "As mensagens dessa pessoa deixarão de aparecer para você.", [
-    { text: "Cancelar", style: "cancel" },
-    { text: "Bloquear", style: "destructive", onPress: () => blockUser.mutate({ userId }) },
-  ]);
-
-  return <ScreenContainer className="px-5"><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-    <View style={styles.hero}><View style={styles.heroIcon}><MaterialIcons name="groups" size={31} color="#A87000" /></View><View style={styles.heroCopy}><Text style={styles.eyebrow}>LIGA DINO</Text><Text style={styles.title}>Você não estuda sozinho</Text><Text style={styles.subtitle}>{state.contestTitle ?? contest.title} · avance junto com outros candidatos.</Text></View></View>
-    <View style={styles.rankCard}><View style={styles.rankHeader}><Text style={styles.sectionTitle}>Ranking da semana</Text><Text style={styles.rankMeta}>demonstração local</Text></View>{DEMO_RANKING.map((item, index) => <View key={item.name} style={styles.rankRow}><Text style={styles.position}>{index + 1}º</Text><Text style={styles.rankName}>{item.name}</Text><Text style={styles.rankScore}>{item.name === "Você" ? ownScore : item.score} PT</Text></View>)}</View>
-    <Pressable onPress={() => router.push("/simulation" as never)} style={({ pressed }) => [styles.simCard, pressed && styles.pressed]}><View><Text style={styles.simEyebrow}>SIMULADO TÁTICO</Text><Text style={styles.simTitle}>{lastSimulation ? "Melhorar meu resultado" : "Iniciar agora"}</Text><Text style={styles.simText}>{lastSimulation ? `Último: ${lastSimulation.accuracy}% de acerto` : "10 questões com correção e corte estimado"}</Text></View><MaterialIcons name="play-circle-fill" size={42} color="#FFFFFF" /></Pressable>
-    <View style={styles.chatHead}><View><Text style={styles.sectionTitle}>Mural da tropa</Text><Text style={styles.chatHint}>Texto e áudios curtos. Respeito é obrigatório.</Text></View><MaterialIcons name="verified-user" size={22} color="#2B7A3A" /></View>
-    {!isAuthenticated && !loading ? <Pressable onPress={signIn} style={styles.loginCard}><MaterialIcons name="login" size={22} color="#286B9A" /><View style={styles.loginCopy}><Text style={styles.loginTitle}>Entre para participar da Liga</Text><Text style={styles.loginText}>Use sua conta Google no portal seguro para enviar mensagens e manter seu histórico.</Text></View></Pressable> : null}
-    {isAuthenticated ? <><View style={styles.rules}><MaterialIcons name="gpp-good" size={18} color="#8B6500" /><Text style={styles.rulesText}>Sem ofensas, dados pessoais, links estranhos ou conteúdo inadequado. Você pode denunciar ou bloquear qualquer mensagem.</Text></View><View style={styles.messageList}>{messages.isLoading ? <Text style={styles.muted}>Carregando a conversa...</Text> : messages.data?.length ? messages.data.map((message) => <View key={message.id} style={styles.message}><View style={styles.messageTop}><Text style={styles.author}>{message.authorName}</Text><View style={styles.messageActions}><Text style={styles.when}>{new Date(message.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</Text><Pressable onPress={() => report(message.id)} hitSlop={8}><MaterialIcons name="flag" size={16} color="#A56B00" /></Pressable><Pressable onPress={() => block(message.userId, message.authorName)} hitSlop={8}><MaterialIcons name="block" size={16} color="#B4453F" /></Pressable></View></View>{message.kind === "audio" ? <Pressable onPress={() => playAudio(message.audioUrl ?? undefined)} style={styles.audioBubble}><MaterialIcons name="play-arrow" size={20} color="#FFFFFF" /><Text style={styles.audioText}>Mensagem de voz</Text></Pressable> : <Text style={styles.messageText}>{message.body}</Text>}</View>) : <Text style={styles.muted}>Seja o primeiro a incentivar a tropa.</Text>}</View><View style={styles.composer}><TextInput value={text} onChangeText={setText} placeholder="Escreva algo respeitoso..." placeholderTextColor="#96A59A" style={styles.composerInput} multiline maxLength={500} /><Pressable onPress={submitText} disabled={sendText.isPending || !text.trim()} style={({ pressed }) => [styles.sendButton, (!text.trim() || sendText.isPending || pressed) && styles.sendDisabled]}><MaterialIcons name="send" size={21} color="#FFFFFF" /></Pressable></View><Pressable onPress={toggleRecording} disabled={sendAudio.isPending} style={({ pressed }) => [styles.audioButton, recorderState.isRecording && styles.audioRecording, (pressed || sendAudio.isPending) && styles.pressed]}><MaterialIcons name={recorderState.isRecording ? "stop" : "mic"} size={20} color={recorderState.isRecording ? "#FFFFFF" : "#9A6300"} /><Text style={[styles.audioButtonText, recorderState.isRecording && styles.audioButtonTextRecording]}>{recorderState.isRecording ? "Parar e enviar áudio" : "Gravar áudio curto"}</Text></Pressable></> : null}
-  </ScrollView></ScreenContainer>;
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `${Math.max(1, mins)} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} h`;
+  return `${Math.floor(hours / 24)} d`;
 }
-const styles = StyleSheet.create({ content: { paddingTop: 21, paddingBottom: 28 }, hero: { flexDirection: "row", alignItems: "center", gap: 13 }, heroIcon: { width: 59, height: 59, borderRadius: 19, backgroundColor: "#FFF2CB", alignItems: "center", justifyContent: "center" }, heroCopy: { flex: 1 }, eyebrow: { color: "#A36A00", fontSize: 10, fontWeight: "900", letterSpacing: 1 }, title: { color: "#102A43", fontSize: 24, fontWeight: "900", marginTop: 3 }, subtitle: { color: "#667085", fontSize: 12, lineHeight: 17, marginTop: 4 }, rankCard: { marginTop: 18, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E1EAE2", borderRadius: 18, padding: 14 }, rankHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }, sectionTitle: { color: "#102A43", fontSize: 16, fontWeight: "900" }, rankMeta: { color: "#8A9B8D", fontSize: 9, fontWeight: "800" }, rankRow: { flexDirection: "row", alignItems: "center", gap: 9, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#EEF2EE" }, position: { color: "#A56B00", fontSize: 12, width: 25, fontWeight: "900" }, rankName: { color: "#31513A", flex: 1, fontSize: 13, fontWeight: "800" }, rankScore: { color: "#2B7A3A", fontSize: 12, fontWeight: "900" }, simCard: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 15, borderRadius: 19, padding: 16, backgroundColor: "#246333" }, simEyebrow: { color: "#CDE7C9", fontSize: 10, fontWeight: "900", letterSpacing: 1 }, simTitle: { color: "#FFFFFF", fontSize: 20, fontWeight: "900", marginTop: 3 }, simText: { color: "#D7ECD4", fontSize: 11, marginTop: 5 }, chatHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 25 }, chatHint: { color: "#6D7E72", fontSize: 11, marginTop: 2 }, loginCard: { flexDirection: "row", gap: 10, backgroundColor: "#EAF3FA", borderRadius: 15, padding: 13, marginTop: 11 }, loginCopy: { flex: 1 }, loginTitle: { color: "#28506F", fontSize: 13, fontWeight: "900" }, loginText: { color: "#54738A", fontSize: 11, lineHeight: 16, marginTop: 3 }, rules: { flexDirection: "row", gap: 7, alignItems: "flex-start", borderRadius: 13, padding: 11, marginTop: 11, backgroundColor: "#FFF7E1" }, rulesText: { flex: 1, color: "#795B15", fontSize: 10, lineHeight: 15 }, messageList: { gap: 8, marginTop: 12 }, message: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E3ECE4", borderRadius: 14, padding: 11 }, messageTop: { flexDirection: "row", justifyContent: "space-between", gap: 8 }, messageActions: { flexDirection: "row", gap: 8, alignItems: "center" }, author: { color: "#2D5937", fontSize: 12, fontWeight: "900" }, when: { color: "#8A9B8D", fontSize: 10 }, messageText: { color: "#405A4A", fontSize: 13, lineHeight: 19, marginTop: 5 }, audioBubble: { flexDirection: "row", alignItems: "center", gap: 7, alignSelf: "flex-start", backgroundColor: "#2E8240", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8, marginTop: 6 }, audioText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" }, muted: { color: "#718078", fontSize: 12, paddingVertical: 12, textAlign: "center" }, composer: { flexDirection: "row", alignItems: "flex-end", gap: 8, marginTop: 12 }, composerInput: { flex: 1, minHeight: 46, maxHeight: 96, backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#DDE8DF", paddingHorizontal: 12, paddingVertical: 11, color: "#243B53", fontSize: 13 }, sendButton: { width: 46, height: 46, borderRadius: 14, justifyContent: "center", alignItems: "center", backgroundColor: "#2E8240" }, sendDisabled: { opacity: 0.5 }, audioButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 9, backgroundColor: "#FFF2CD", borderRadius: 13, paddingVertical: 11 }, audioRecording: { backgroundColor: "#C6534B" }, audioButtonText: { color: "#9A6300", fontSize: 12, fontWeight: "900" }, audioButtonTextRecording: { color: "#FFFFFF" }, pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] } });
+
+export default function CommunityScreen() {
+  const { state } = useStudy();
+  const { posts, threads, createPost, toggleLike, reportPost } = useCommunity();
+  const [tab, setTab] = useState<Tab>("feed");
+  const [draft, setDraft] = useState("");
+  const [imageUri, setImageUri] = useState<string | undefined>();
+  const [posting, setPosting] = useState(false);
+
+  const displayName = state.name || "Candidato";
+
+  const pickImage = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/jpeg", "image/png", "image/webp", "image/*"],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      const check = isAllowedCommunityImage({
+        size: asset.size,
+        mimeType: asset.mimeType,
+      });
+      if (!check.ok) {
+        Alert.alert("Foto não permitida", check.reason);
+        return;
+      }
+      setImageUri(asset.uri);
+      haptic.selection();
+    } catch {
+      Alert.alert("Não foi possível abrir a foto", "Tente novamente.");
+    }
+  };
+
+  const publish = () => {
+    if (!draft.trim() && !imageUri) return;
+    setPosting(true);
+    const result = createPost({
+      authorName: displayName,
+      body: draft,
+      imageUri,
+    });
+    setPosting(false);
+    if (!result.ok) {
+      Alert.alert("Não foi possível publicar", result.error);
+      return;
+    }
+    setDraft("");
+    setImageUri(undefined);
+    haptic.success();
+  };
+
+  const onReport = (post: CommunityPost) => {
+    Alert.alert(
+      "Denunciar publicação",
+      "Reportar este post por conteúdo ofensivo ou impróprio?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Denunciar",
+          style: "destructive",
+          onPress: () => {
+            reportPost(post.id);
+            haptic.light();
+            Alert.alert("Denúncia registrada", "Nossa moderação vai analisar este conteúdo.");
+          },
+        },
+      ],
+    );
+  };
+
+  return (
+    <ScreenContainer className="px-0">
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Comunidade</Text>
+            <Text style={styles.subtitle}>Troque ideias e rotina de estudos com outros candidatos</Text>
+          </View>
+          <DuoduoMascot size={48} />
+        </View>
+        <View style={styles.tabs}>
+          <Pressable
+            onPress={() => setTab("feed")}
+            style={[styles.tab, tab === "feed" && styles.tabActive]}
+          >
+            <Text style={[styles.tabText, tab === "feed" && styles.tabTextActive]}>Mural</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setTab("chats")}
+            style={[styles.tab, tab === "chats" && styles.tabActive]}
+          >
+            <Text style={[styles.tabText, tab === "chats" && styles.tabTextActive]}>Conversas</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {tab === "feed" ? (
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={styles.composer}>
+              <Text style={styles.composerLabel}>Compartilhe sua rotina</Text>
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder="Como foi o estudo de hoje?"
+                placeholderTextColor="#8A9A8E"
+                style={styles.input}
+                multiline
+                maxLength={800}
+              />
+              {imageUri ? (
+                <View style={styles.previewWrap}>
+                  <Image source={{ uri: imageUri }} style={styles.preview} />
+                  <Pressable onPress={() => setImageUri(undefined)} style={styles.removePhoto}>
+                    <MaterialIcons name="close" size={16} color="#FFF" />
+                  </Pressable>
+                </View>
+              ) : null}
+              <View style={styles.composerActions}>
+                <Pressable onPress={pickImage} style={styles.photoBtn}>
+                  <MaterialIcons name="photo-camera" size={20} color="#2E7F3D" />
+                  <Text style={styles.photoBtnText}>Foto</Text>
+                </Pressable>
+                <PrimaryButton
+                  label={posting ? "Publicando…" : "Publicar"}
+                  onPress={publish}
+                  disabled={posting || (!draft.trim() && !imageUri)}
+                  style={{ flex: 1, minHeight: 44 }}
+                />
+              </View>
+              <Text style={styles.rules}>
+                Fotos impróprias ou ofensas não são permitidas. Denúncias vão para moderação.
+              </Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <PostCard
+              post={item}
+              onLike={() => {
+                toggleLike(item.id);
+                haptic.selection();
+              }}
+              onReport={() => onReport(item)}
+            />
+          )}
+          ListEmptyComponent={
+            <Text style={styles.empty}>Ainda não há publicações. Seja o primeiro!</Text>
+          }
+        />
+      ) : (
+        <FlatList
+          data={threads}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <Text style={styles.chatsHint}>
+              Conversas privadas para combinar estudos e tirar dúvidas com respeito.
+            </Text>
+          }
+          renderItem={({ item }) => (
+            <ThreadRow
+              thread={item}
+              onPress={() =>
+                router.push({
+                  pathname: "/community-chat" as never,
+                  params: { threadId: item.id, peerName: item.peerName },
+                } as never)
+              }
+            />
+          )}
+          ListEmptyComponent={
+            <Text style={styles.empty}>Nenhuma conversa ainda.</Text>
+          }
+        />
+      )}
+    </ScreenContainer>
+  );
+}
+
+function PostCard({
+  post,
+  onLike,
+  onReport,
+}: {
+  post: CommunityPost;
+  onLike: () => void;
+  onReport: () => void;
+}) {
+  return (
+    <View style={styles.post}>
+      <View style={styles.postTop}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarLetter}>{post.authorName.charAt(0).toUpperCase()}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.author}>{post.authorName}</Text>
+          <Text style={styles.when}>{timeAgo(post.createdAt)}</Text>
+        </View>
+        <Pressable onPress={onReport} hitSlop={8}>
+          <MaterialIcons name="flag" size={18} color="#9AA89E" />
+        </Pressable>
+      </View>
+      {post.body ? <Text style={styles.postBody}>{post.body}</Text> : null}
+      {post.imageUri ? (
+        <Image source={{ uri: post.imageUri }} style={styles.postImage} resizeMode="cover" />
+      ) : null}
+      <View style={styles.postActions}>
+        <Pressable onPress={onLike} style={styles.likeBtn}>
+          <MaterialIcons
+            name={post.likedByMe ? "favorite" : "favorite-border"}
+            size={20}
+            color={post.likedByMe ? "#C6534B" : "#5A7160"}
+          />
+          <Text style={styles.likeText}>{post.likeCount}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function ThreadRow({ thread, onPress }: { thread: DirectThread; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.thread, pressed && styles.pressed]}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarLetter}>{thread.peerName.charAt(0).toUpperCase()}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <View style={styles.threadTop}>
+          <Text style={styles.threadName}>{thread.peerName}</Text>
+          <Text style={styles.when}>{timeAgo(thread.lastAt)}</Text>
+        </View>
+        <Text style={styles.threadPreview} numberOfLines={1}>
+          {thread.lastMessage}
+        </Text>
+      </View>
+      {thread.unread > 0 ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{thread.unread}</Text>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 },
+  headerTop: { flexDirection: "row", alignItems: "center", gap: 10 },
+  title: { color: "#102A43", fontSize: 28, fontWeight: "900", letterSpacing: -0.5 },
+  subtitle: { color: "#5A7160", fontSize: 13, lineHeight: 18, marginTop: 4 },
+  tabs: {
+    flexDirection: "row",
+    marginTop: 14,
+    backgroundColor: "#E8F0E6",
+    borderRadius: 12,
+    padding: 4,
+  },
+  tab: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center" },
+  tabActive: { backgroundColor: "#FFFFFF" },
+  tabText: { color: "#5A7160", fontSize: 14, fontWeight: "800" },
+  tabTextActive: { color: "#1F7A32" },
+  list: { paddingHorizontal: 16, paddingBottom: 28 },
+  composer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#D8E4D6",
+    marginBottom: 14,
+    marginTop: 6,
+  },
+  composerLabel: { color: "#1A4D28", fontSize: 13, fontWeight: "900", marginBottom: 8 },
+  input: {
+    minHeight: 72,
+    maxHeight: 120,
+    borderWidth: 1,
+    borderColor: "#DDE8DF",
+    borderRadius: 12,
+    padding: 12,
+    color: "#243B53",
+    fontSize: 14,
+    textAlignVertical: "top",
+  },
+  previewWrap: { marginTop: 10, position: "relative" },
+  preview: { width: "100%", height: 160, borderRadius: 12 },
+  removePhoto: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: 12,
+    padding: 4,
+  },
+  composerActions: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
+  photoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#EAF6E8",
+  },
+  photoBtnText: { color: "#2E7F3D", fontSize: 13, fontWeight: "800" },
+  rules: { color: "#7A8B7E", fontSize: 11, lineHeight: 15, marginTop: 10 },
+  post: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E1EAE2",
+    marginBottom: 10,
+  },
+  postTop: { flexDirection: "row", alignItems: "center", gap: 10 },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#D8EFCE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarLetter: { color: "#1F5E32", fontSize: 16, fontWeight: "900" },
+  author: { color: "#1A3A24", fontSize: 14, fontWeight: "900" },
+  when: { color: "#8A9B8D", fontSize: 11, marginTop: 1 },
+  postBody: { color: "#334F3C", fontSize: 14, lineHeight: 21, marginTop: 10 },
+  postImage: { width: "100%", height: 200, borderRadius: 12, marginTop: 12 },
+  postActions: { flexDirection: "row", marginTop: 10 },
+  likeBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
+  likeText: { color: "#5A7160", fontSize: 13, fontWeight: "800" },
+  chatsHint: { color: "#5A7160", fontSize: 13, lineHeight: 19, marginBottom: 12, marginTop: 4 },
+  thread: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E1EAE2",
+    marginBottom: 8,
+  },
+  threadTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  threadName: { color: "#1A3A24", fontSize: 15, fontWeight: "900" },
+  threadPreview: { color: "#5A7160", fontSize: 13, marginTop: 3 },
+  badge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#1F8A3A",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  badgeText: { color: "#FFF", fontSize: 11, fontWeight: "900" },
+  empty: { color: "#7A8B7E", textAlign: "center", marginTop: 24, fontSize: 14 },
+  pressed: { opacity: 0.75 },
+});
