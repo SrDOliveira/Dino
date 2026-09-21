@@ -1,0 +1,96 @@
+# Project TODO
+
+- [x] Definir os modelos locais de concurso, disciplina, lição, questão, resposta e estatísticas.
+- [x] Criar o fluxo de boas-vindas e configuração de perfil de estudo.
+- [x] Implementar a seleção inicial de concursos policiais e a confirmação de disciplinas.
+- [x] Implementar o nivelamento com alternativas, registro de “Chutei” e “Não sei”.
+- [x] Persistir perfil, respostas, XP, ofensiva e progresso usando armazenamento local.
+- [x] Criar a tela Hoje com sessão diária recomendada e indicadores de progresso.
+- [x] Implementar microlições e questões de fixação com feedback explicativo.
+- [x] Implementar a trilha por disciplina e as lições disponíveis no MVP.
+- [x] Implementar diagnóstico por disciplina e por assunto baseado nas respostas registradas.
+- [x] Criar a biblioteca local de materiais com seleção de PDF e comunicação transparente da futura geração por IA.
+- [x] Aplicar a identidade visual Duoduo e adicionar o periquito mascote nos pontos de incentivo.
+- [x] Criar ícone próprio do aplicativo e atualizar a configuração de marca.
+- [x] Criar testes unitários para regras de diagnóstico, XP, ofensiva e persistência.
+- [x] Validar o aplicativo em TypeScript, lint e testes automatizados.
+- [x] Revisar a acessibilidade e os fluxos móveis principais antes da entrega.
+- [x] Renomear o aplicativo para Dino em toda a configuração e interface.
+- [x] Remover temporariamente os ícones personalizados para permitir o salvamento da versão.
+- [x] Modelar o motor de aprendizagem por desempenho, incluindo erros, chutes e respostas “não sei”.
+- [x] Criar busca de concursos policiais com resultados confirmáveis e dados de edital.
+- [x] Ampliar a seleção inicial para PF Agente, PF Administrativo, Polícia Civil do DF, PMDF e PMESP Soldado.
+- [x] Enriquecer o onboarding para permitir busca livre ou seleção de concursos sugeridos.
+- [x] Ampliar a biblioteca de materiais para PDFs de até 50 MB e estados de processamento em segundo plano.
+- [x] Preparar a fila local de processamento e o contrato de IA para teoria e questões fundamentadas no material.
+- [x] Criar sons curtos de acerto e erro adequados à experiência de questões.
+- [x] Criar uma área gerencial local para cadastrar materiais, revisar questões e definir conteúdos publicados.
+- [x] Documentar a integração futura de busca externa e a política de fontes confiáveis.
+- [x] Testar os novos fluxos de descoberta, processamento e diagnóstico avançado.
+- [x] Implementar catálogo local de concursos e resultados de busca que simulem a consulta externa futura.
+- [x] Implementar estados locais de fila, leitura, estruturação e disponibilidade de material sem prometer processamento por IA nesta etapa.
+- [x] Preservar contratos de dados para que busca externa, armazenamento em nuvem e IA possam ser conectados posteriormente.
+- [x] Corrigir a navegação persistente nas telas de lição e nivelamento para evitar que o candidato fique sem saída.
+- [x] Definir um padrão de tela cheia de estudo com acesso seguro à tela inicial e às abas principais.
+- [x] Criar opções predefinidas de som de resposta e a configuração de som próprio entre 1 e 2 segundos.
+- [x] Validar arquivos de áudio do usuário e persistir a preferência de reprodução local.
+- [x] Selecionar e configurar uma integração externa segura para pesquisa de concursos policiais.
+- [x] Implementar confirmação de concurso e dados de edital a partir de resultados externos.
+- [x] Preparar o fluxo real de processamento por IA de PDFs enviados pelo candidato, mantendo referências de origem.
+- [x] Criar área de ligas, ranking e progresso comparativo com dados explicitamente demonstrativos até a sincronização em nuvem.
+- [x] Estruturar dados de perfil e métricas para o ranking real após autenticação e sincronização.
+- [x] Implementar análise de PDF sob demanda com aviso de aplicativo aberto e progresso de processamento.
+- [x] Preparar o contrato de fila em segundo plano para a segunda versão, sem ativar infraestrutura contínua agora.
+- [x] Testar as novas jornadas de navegação, sons, busca e competitividade.
+- [x] Integrar um provedor especializado de pesquisa web com credenciais protegidas no servidor.
+- [x] Mostrar fontes, título e URL de cada resultado externo antes da confirmação do concurso.
+- [x] Investigar e corrigir a falha ao enviar PDFs válidos para análise.
+- [x] Exibir uma mensagem de erro acionável quando a análise de material falhar.
+- [x] Adicionar navegação persistente na tela de materiais para Início, Trilhas, Diagnóstico e Perfil.
+- [x] Redesenhar a tela principal como Arena tática inspirada na referência fornecida.
+- [x] Criar um mapa de missões com temas concluídos, disponíveis e bloqueados conforme o progresso do candidato.
+- [x] Gerar o plano tático diário com base no concurso, disciplinas e desempenho após o nivelamento.
+- [x] Implementar indicadores de ofensiva, brevês conquistados e patente progressiva.
+- [x] Definir regras simples para patente de Soldado a Comandante com base em brevês e consistência.
+- [x] Atualizar o rodapé global para Arena, Diagnóstico, Simulados e Perfil em todas as telas principais.
+- [x] Ajustar a interface a telas estreitas e largas sem perder a hierarquia do mapa e do plano diário.
+- [x] Testar as regras táticas e os fluxos da nova Arena.
+- [x] Corrigir o rodapé de navegação que ocupa a área central em lições e nivelamento.
+- [x] Exibir uma alternativa de reenvio e diagnóstico detalhado quando o PDF não puder ser analisado.
+- [x] Incorporar o mascote tático fornecido pelo usuário como ícone recorrente da interface.
+- [x] Substituir a progressão simplificada por 15 patentes baseadas em Pontos Táticos e marcos de estudo.
+- [x] Implementar brevês com critérios combinados de acerto, retenção, velocidade e consistência.
+- [x] Criar a tela funcional de Simulados com resultado, corte estimado e compartilhamento.
+- [x] Permitir definir prioridades semanais de missão e manter temas não prioritários bloqueados até a progressão necessária.
+- [x] Implementar teste de domínio para conteúdos sinalizados como estudados fora do Dino, com aprovação mínima de 75%.
+- [x] Indicar revisão de manutenção quando um tema ficar mais de 14 dias sem revisão planejada.
+- [x] Preparar contratos de versão, staging e publicação para conexão futura à base editorial externa.
+- [x] Testar os fluxos de patentes, simulados, prioridades, domínio e integração futura.
+- [x] Converter o mapa pedagógico de 24 áreas em uma política verificável de fontes e foco tático.
+- [x] Criar modelos de teoria, referências, nível de revisão e pacotes de estudo offline.
+- [x] Criar biblioteca de teoria por disciplina e tema, com experiência de leitura, revisão e questões rápidas.
+- [x] Permitir salvar conteúdo teórico no dispositivo para uso offline, sem recurso de exportação.
+- [x] Implementar busca de fontes confiáveis e geração orientada por fonte, priorizando material oficial e gratuito.
+- [x] Exibir referências e avisos de revisão editorial em todo conteúdo teórico gerado.
+- [x] Vincular a teoria às missões, ao diagnóstico e às questões do mapa tático.
+- [x] Testar regras de qualidade, referências, downloads offline e a jornada de teoria.
+- [x] Confirmar a disponibilidade do ambiente após a reinicialização do servidor e recuperar alterações não salvas.
+- [x] Recuperar teoria completa, agenda de estudo, edital estruturado, sincronização e diagnóstico de PDF após a restauração do checkpoint.
+- [x] Analisar e aplicar os ajustes especificados no arquivo anexado pelo usuário.
+- [x] Reposicionar a mensagem inicial do Dino como mentor e professor dedicado ao concurso escolhido.
+- [x] Ampliar a busca de edital com seleção manual de matérias e tópicos e entrada de conteúdo programático.
+- [x] Criar introdução elegante ao nivelamento e permitir escolher temas para nivelar ou iniciar do zero.
+- [x] Garantir que Arena, plano e contagem usem apenas o concurso e o edital configurados pelo candidato.
+- [x] Avisar a gestão editorial quando faltar teoria e oferecer material próprio enquanto busca conteúdo referenciado.
+- [x] Restaurar a Liga com ranking e conversa segura de texto e áudio entre candidatos.
+- [x] Permitir editar manualmente as datas do concurso para a contagem regressiva da Arena.
+- [x] Adicionar denúncia, bloqueio e regras de convivência reforçadas à Liga.
+- [x] Ampliar a descoberta de tópicos de teoria a partir do conteúdo programático do edital.
+- [ ] Preparar validação de áudio, notificações e PDFs em dispositivo físico.
+- [ ] Reiniciar o ambiente para teste inicial com uma nova conta.
+- [x] Corrigir o onboarding que fica preso no topo e não exibe os campos iniciais em Android físico compacto.
+- [ ] Preparar e enviar o projeto Dino para um repositório GitHub confirmado pelo usuário.
+- [ ] Validar que segredos e artefatos sensíveis não sejam enviados ao GitHub.
+
+مل
+
